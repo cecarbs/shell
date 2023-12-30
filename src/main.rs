@@ -30,18 +30,16 @@ fn main() {
             }
             "exit" => return,
             command => {
-                let mut child = Command::new(command).args(args).spawn().unwrap();
-
-                child.wait().unwrap();
+                let result = Command::new(command).args(args).spawn();
+                match result {
+                    Ok(mut child) => {
+                        child.wait().unwrap();
+                    }
+                    Err(e) => {
+                        eprintln!("{}", e);
+                    }
+                }
             }
         }
-
-        // // read_line leaves a trailing newline, which trim removes
-        // let command: &str = input.trim();
-        //
-        // let mut child = Command::new(command).spawn().unwrap();
-        //
-        // // complete task before accepting another command
-        // child.wait().unwrap();
     }
 }
