@@ -1,7 +1,7 @@
 use std::{
     env,
     io::{stdin, stdout, Write},
-    path::Path,
+    path::{Path, PathBuf},
     process::Command,
 };
 
@@ -19,6 +19,7 @@ fn main() {
         let mut input = String::new();
         stdin().read_line(&mut input).unwrap();
 
+        // take arguments from certain commands
         let mut parts = input.split_whitespace();
         let command = parts.next().unwrap();
         let args = parts;
@@ -34,16 +35,36 @@ fn main() {
             }
             "exit" => return,
             command => {
-                let result = Command::new(command).args(args).spawn();
+                let result = find_executable_in_path(command);
                 match result {
-                    Ok(mut child) => {
-                        child.wait().unwrap();
+                    Some(executable_path) => {
+                        let result = Command::new(executable_path).args(args).spawn();
+                        match result {
+                            Ok(mut child) => {
+                                child.wait().unwrap();
+                            }
+                            Err(e) => {
+                                eprintln!("{}", e);
+                            }
+                        }
                     }
-                    Err(e) => {
-                        eprintln!("{}", e);
+                    None => {
+                        eprintln!("Command not found: {}", command);
                     }
                 }
             }
         }
     }
+}
+
+fn find_executable_in_path(command: &str) -> Option<PathBuf> {
+    if let Some(paths) = env::var_os("PATH") {
+        for path in env::split_paths(&paths) {
+            let full_path = path.join(command);
+            if full_path.is_file() {
+                return Some(full_path);
+            }
+        }
+    }
+    None
 }
